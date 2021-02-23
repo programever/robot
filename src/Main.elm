@@ -4,10 +4,14 @@ import Browser
 import Css
     exposing
         ( alignItems
-        , backgroundColor
+        , backgroundImage
+        , backgroundPosition
+        , backgroundSize
         , border3
         , center
+        , color
         , column
+        , contain
         , displayFlex
         , flexDirection
         , fontSize
@@ -18,6 +22,7 @@ import Css
         , px
         , row
         , solid
+        , url
         , width
         )
 import Html.Styled exposing (Html, div, text, toUnstyled)
@@ -64,6 +69,7 @@ type Cell
 
 type alias Model =
     { grids : Grids
+    , direction : Direction
     }
 
 
@@ -96,6 +102,7 @@ initGrids =
 init : ( Model, Cmd Msg )
 init =
     ( { grids = initGrids
+      , direction = East
       }
     , Cmd.none
     )
@@ -127,7 +134,7 @@ update msg model =
                         |> Maybe.withDefault False
             in
             if moveAble then
-                ( { model | grids = setActiveCell x y grids }, Cmd.none )
+                ( { model | grids = setActiveCell x y grids, direction = direction }, Cmd.none )
 
             else
                 ( model, Cmd.none )
@@ -227,22 +234,22 @@ setActiveCell x y grids =
 
 
 view : Model -> Html Msg
-view { grids } =
+view { grids, direction } =
     div [ css style.container ]
         [ div [ css style.header ] [ text "ROBOT" ]
         , div [ css style.intro ] [ text "Use your cursors or click on the next cell to move the Robot" ]
-        , gridsView grids
+        , gridsView direction grids
         ]
 
 
-gridsView : Grids -> Html Msg
-gridsView grids =
+gridsView : Direction -> Grids -> Html Msg
+gridsView direction grids =
     div [ css style.grids ] <|
-        List.map (\cells -> div [ css style.row ] (List.map cellView cells)) grids
+        List.map (\cells -> div [ css style.row ] (List.map (cellView direction) cells)) grids
 
 
-cellView : Cell -> Html Msg
-cellView cell =
+cellView : Direction -> Cell -> Html Msg
+cellView direction cell =
     let
         ( cellStyle, x, y ) =
             case cell of
@@ -250,7 +257,7 @@ cellView cell =
                     ( [], x_, y_ )
 
                 Active x_ y_ ->
-                    ( style.activeCell, x_, y_ )
+                    ( style.activeCell direction, x_, y_ )
     in
     div [ css <| style.cell ++ cellStyle, onClick <| MoveTo x y ] []
 
@@ -268,9 +275,11 @@ style =
     , header =
         [ fontSize (px 20)
         , padding (px 20)
+        , color (hex "E15A1D")
         ]
     , intro =
         [ fontSize (px 12)
+        , color (hex "333333")
         ]
     , grids =
         [ marginTop (px 20)
@@ -285,8 +294,26 @@ style =
         , border3 (px 1) solid (hex "BDBDBD")
         ]
     , activeCell =
-        [ backgroundColor (hex "FFF4F0")
-        ]
+        \direction ->
+            let
+                robotImage =
+                    case direction of
+                        North ->
+                            "/assets/images/north.png"
+
+                        East ->
+                            "/assets/images/east.png"
+
+                        South ->
+                            "/assets/images/south.png"
+
+                        West ->
+                            "/assets/images/west.png"
+            in
+            [ backgroundImage (url robotImage)
+            , backgroundPosition center
+            , backgroundSize contain
+            ]
     , grid = []
     }
 
