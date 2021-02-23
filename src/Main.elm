@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Events exposing (onKeyDown)
 import Css
     exposing
         ( alignItems
@@ -28,6 +29,7 @@ import Css
 import Html.Styled exposing (Html, div, text, toUnstyled)
 import Html.Styled.Attributes exposing (css)
 import Html.Styled.Events exposing (onClick)
+import Json.Decode as JD
 
 
 
@@ -45,6 +47,7 @@ gridsConfig =
 
 type Msg
     = MoveTo Int Int
+    | Noop
 
 
 type Direction
@@ -61,6 +64,60 @@ type alias Grids =
 type Cell
     = Normal Int Int
     | Active Int Int
+
+
+
+---- SUBSCRIPTION ----
+
+
+subscriptions : Model -> Sub Msg
+subscriptions { grids } =
+    let
+        ( x, y ) =
+            getActiveCell grids
+                |> Maybe.map getCellXY
+                |> Maybe.withDefault ( 0, 0 )
+
+        keyDecoder =
+            JD.map (toDirection >> toMsg) (JD.field "keyCode" JD.int)
+
+        toDirection keyCode =
+            case keyCode of
+                38 ->
+                    Just North
+
+                39 ->
+                    Just East
+
+                40 ->
+                    Just South
+
+                37 ->
+                    Just West
+
+                _ ->
+                    Nothing
+
+        toMsg direction =
+            case direction of
+                Nothing ->
+                    Noop
+
+                Just direction_ ->
+                    case direction_ of
+                        North ->
+                            MoveTo x (y - 1)
+
+                        East ->
+                            MoveTo (x + 1) y
+
+                        South ->
+                            MoveTo x (y + 1)
+
+                        West ->
+                            MoveTo (x - 1) y
+    in
+    onKeyDown keyDecoder
 
 
 
@@ -138,6 +195,9 @@ update msg model =
 
             else
                 ( model, Cmd.none )
+
+        Noop ->
+            ( model, Cmd.none )
 
 
 getDirection : Int -> Int -> Cell -> Direction
@@ -328,5 +388,5 @@ main =
         { view = toUnstyled << view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
