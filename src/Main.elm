@@ -46,7 +46,7 @@ gridsConfig =
 
 
 type Msg
-    = MoveTo Int Int
+    = MoveTo Point
     | Noop
 
 
@@ -62,8 +62,12 @@ type alias Grids =
 
 
 type Cell
-    = Normal Int Int
-    | Active Int Int
+    = Normal Point
+    | Active Point
+
+
+type alias Point =
+    ( Int, Int )
 
 
 
@@ -75,7 +79,7 @@ subscriptions { grids } =
     let
         ( x, y ) =
             getActiveCell grids
-                |> Maybe.map getCellXY
+                |> Maybe.map getCellPoint
                 |> Maybe.withDefault ( 0, 0 )
 
         keyDecoder =
@@ -106,16 +110,16 @@ subscriptions { grids } =
                 Just direction_ ->
                     case direction_ of
                         North ->
-                            MoveTo x (y - 1)
+                            MoveTo ( x, y - 1 )
 
                         East ->
-                            MoveTo (x + 1) y
+                            MoveTo ( x + 1, y )
 
                         South ->
-                            MoveTo x (y + 1)
+                            MoveTo ( x, y + 1 )
 
                         West ->
-                            MoveTo (x - 1) y
+                            MoveTo ( x - 1, y )
     in
     onKeyDown keyDecoder
 
@@ -146,10 +150,10 @@ initGrids =
             List.map
                 (\x ->
                     if x == 0 && y == 0 then
-                        Active 0 0
+                        Active ( 0, 0 )
 
                     else
-                        Normal x y
+                        Normal ( x, y )
                 )
                 listCol
     in
@@ -172,7 +176,7 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        MoveTo x y ->
+        MoveTo point ->
             let
                 { grids } =
                     model
@@ -182,16 +186,16 @@ update msg model =
 
                 direction =
                     activeCell
-                        |> Maybe.map (getDirection x y)
+                        |> Maybe.map (getDirection point)
                         |> Maybe.withDefault East
 
                 moveAble =
                     activeCell
-                        |> Maybe.map (ableToMove direction x y)
+                        |> Maybe.map (ableToMove direction point)
                         |> Maybe.withDefault False
             in
             if moveAble then
-                ( { model | grids = setActiveCell x y grids, direction = direction }, Cmd.none )
+                ( { model | grids = setActiveCell point grids, direction = direction }, Cmd.none )
 
             else
                 ( model, Cmd.none )
@@ -200,11 +204,11 @@ update msg model =
             ( model, Cmd.none )
 
 
-getDirection : Int -> Int -> Cell -> Direction
-getDirection x y cell =
+getDirection : Point -> Cell -> Direction
+getDirection ( x, y ) cell =
     let
         ( currentX, currentY ) =
-            getCellXY cell
+            getCellPoint cell
     in
     if x == currentX && y < currentY then
         North
@@ -224,10 +228,10 @@ getActiveCell grids =
     let
         isActive cell =
             case cell of
-                Active _ _ ->
+                Active _ ->
                     True
 
-                Normal _ _ ->
+                Normal _ ->
                     False
     in
     List.concat grids
@@ -235,24 +239,24 @@ getActiveCell grids =
         |> List.head
 
 
-getCellXY : Cell -> ( Int, Int )
-getCellXY cell =
+getCellPoint : Cell -> Point
+getCellPoint cell =
     case cell of
-        Normal x y ->
-            ( x, y )
+        Normal point ->
+            point
 
-        Active x y ->
-            ( x, y )
+        Active point ->
+            point
 
 
-ableToMove : Direction -> Int -> Int -> Cell -> Bool
-ableToMove direction x y cell =
+ableToMove : Direction -> Point -> Cell -> Bool
+ableToMove direction ( x, y ) cell =
     let
         { rows, cols } =
             gridsConfig
 
         ( currentX, currentY ) =
-            getCellXY cell
+            getCellPoint cell
     in
     case direction of
         North ->
@@ -268,21 +272,21 @@ ableToMove direction x y cell =
             (currentX - 1 == x && x > -1) && (currentY == y)
 
 
-setActiveCell : Int -> Int -> Grids -> Grids
-setActiveCell x y grids =
+setActiveCell : Point -> Grids -> Grids
+setActiveCell ( x, y ) grids =
     let
         mapCells cells =
             List.map
                 (\cell ->
                     let
                         ( currentX, currentY ) =
-                            getCellXY cell
+                            getCellPoint cell
                     in
                     if currentX == x && currentY == y then
-                        Active currentX currentY
+                        Active ( currentX, currentY )
 
                     else
-                        Normal currentX currentY
+                        Normal ( currentX, currentY )
                 )
                 cells
     in
@@ -311,15 +315,15 @@ gridsView direction grids =
 cellView : Direction -> Cell -> Html Msg
 cellView direction cell =
     let
-        ( cellStyle, x, y ) =
+        ( cellStyle, point ) =
             case cell of
-                Normal x_ y_ ->
-                    ( [], x_, y_ )
+                Normal point_ ->
+                    ( [], point_ )
 
-                Active x_ y_ ->
-                    ( style.activeCell direction, x_, y_ )
+                Active point_ ->
+                    ( style.activeCell direction, point_ )
     in
-    div [ css <| style.cell ++ cellStyle, onClick <| MoveTo x y ] []
+    div [ css <| style.cell ++ cellStyle, onClick <| MoveTo point ] []
 
 
 
