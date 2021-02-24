@@ -11,10 +11,10 @@ import Type exposing (Model, Msg(..))
 
 
 subscription : Model -> Sub Msg
-subscription { grids } =
+subscription model =
     let
         keyDecoder =
-            JD.map (Data.arrowKeysDecoder grids >> toMsg) (JD.field "keyCode" JD.int)
+            JD.map (Data.keyToPointDecoder model >> toMsg) (JD.field "keyCode" JD.int)
 
         toMsg point =
             Maybe.map MoveTo point

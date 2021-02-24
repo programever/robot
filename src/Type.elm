@@ -1,6 +1,6 @@
 module Type exposing (Model, Msg(..))
 
-import Data exposing (Direction, Grids, Point)
+import Data exposing (Grids, Point)
 
 
 type Msg
@@ -9,6 +9,4 @@ type Msg
 
 
 type alias Model =
-    { grids : Grids
-    , direction : Direction
-    }
+    Grids

@@ -3,14 +3,9 @@ module Data exposing
     , Direction(..)
     , Grids
     , Point
-    , ableToMove
-    , arrowKeysDecoder
-    , directionToPoint
-    , getActiveCell
-    , getCellPoint
     , init
+    , keyToPointDecoder
     , setActiveCell
-    , toDirection
     )
 
 ---- CONST ----
@@ -33,7 +28,9 @@ type Direction
 
 
 type alias Grids =
-    List (List Cell)
+    { cells : List (List Cell)
+    , direction : Direction
+    }
 
 
 type Cell
@@ -72,7 +69,9 @@ init =
                 )
                 listCol
     in
-    List.map mapCols listRow
+    { cells = List.map mapCols listRow
+    , direction = East
+    }
 
 
 
@@ -80,9 +79,28 @@ init =
 
 
 setActiveCell : Point -> Grids -> Grids
-setActiveCell ( x, y ) grids =
+setActiveCell point grids =
     let
-        mapCells cells =
+        { cells } =
+            grids
+
+        ( x, y ) =
+            point
+
+        activeCell =
+            getActiveCell grids
+
+        direction =
+            activeCell
+                |> Maybe.map (toDirection point)
+                |> Maybe.withDefault East
+
+        moveAble =
+            activeCell
+                |> Maybe.map (getCellPoint >> ableToMove direction point)
+                |> Maybe.withDefault False
+
+        mapCells =
             List.map
                 (\cell ->
                     let
@@ -95,17 +113,22 @@ setActiveCell ( x, y ) grids =
                     else
                         Normal ( currentX, currentY )
                 )
-                cells
     in
-    List.map mapCells grids
+    if moveAble then
+        { cells = List.map mapCells cells
+        , direction = direction
+        }
+
+    else
+        grids
 
 
 
 ---- DECODER ----
 
 
-arrowKeysDecoder : Grids -> Int -> Maybe Point
-arrowKeysDecoder grids keyCode =
+keyToPointDecoder : Grids -> Int -> Maybe Point
+keyToPointDecoder grids keyCode =
     let
         ( x, y ) =
             getActiveCell grids
@@ -157,7 +180,7 @@ toDirection ( x, y ) cell =
 
 
 getActiveCell : Grids -> Maybe Cell
-getActiveCell grids =
+getActiveCell { cells } =
     let
         isActive cell =
             case cell of
@@ -167,7 +190,7 @@ getActiveCell grids =
                 Normal _ ->
                     False
     in
-    List.concat grids
+    List.concat cells
         |> List.filter isActive
         |> List.head
 
@@ -200,20 +223,4 @@ ableToMove direction ( x, y ) ( currentX, currentY ) =
 
         West ->
             (currentX - 1 == x && x > -1) && (currentY == y)
-
-
-directionToPoint : Direction -> Point -> Point
-directionToPoint direction ( x, y ) =
-    case direction of
-        North ->
-            ( x, y - 1 )
-
-        East ->
-            ( x + 1, y )
-
-        South ->
-            ( x, y + 1 )
-
-        West ->
-            ( x - 1, y )
 

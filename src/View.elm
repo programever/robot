@@ -32,18 +32,18 @@ import Type exposing (Model, Msg(..))
 
 
 view : Model -> Html Msg
-view { grids, direction } =
+view model =
     div [ css style.container ]
         [ div [ css style.header ] [ text "ROBOT" ]
         , div [ css style.intro ] [ text "Use your cursors or click on the next cell to move the Robot" ]
-        , gridsView direction grids
+        , gridsView model
         ]
 
 
-gridsView : Direction -> Grids -> Html Msg
-gridsView direction grids =
+gridsView : Grids -> Html Msg
+gridsView { direction, cells } =
     div [ css style.grids ] <|
-        List.map (\cells -> div [ css style.row ] (List.map (cellView direction) cells)) grids
+        List.map (\cells_ -> div [ css style.row ] (List.map (cellView direction) cells_)) cells
 
 
 cellView : Direction -> Cell -> Html Msg
